@@ -1,5 +1,7 @@
 package com.bazan.carlend.customer;
 
+import com.bazan.carlend.kafka.CustomerCreated;
+import com.bazan.carlend.kafka.CustomerProducer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -11,6 +13,7 @@ import java.util.stream.Collectors;
 public class CustomerService implements ICustomerService {
 
     private final ICustomerRepository customerRepository;
+    private final CustomerProducer customerProducer;
 
     @Override
     public CustomerResponse create(CreateCustomerRequest customerRequest) {
@@ -26,6 +29,15 @@ public class CustomerService implements ICustomerService {
                 .build();
 
         var createdCustomer = customerRepository.save(customer);
+
+        customerProducer.sendCustomer(
+                new CustomerCreated(
+                        createdCustomer.getId(),
+                        createdCustomer.getFirstName(),
+                        createdCustomer.getLastName(),
+                        createdCustomer.getEmail()
+                )
+        );
 
         return CustomerMapper.fromCustomer(createdCustomer);
     }
