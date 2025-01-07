@@ -20,13 +20,13 @@ spring:
 
 
     consumer:
-      group-id: customerGroup
+      group-id: customerGroup,vehicleGroup
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: '*'
-        spring.json.type.mapping: customerCreated:com.bazan.carlend.kafka.customer.CustomerCreated
+        spring.json.type.mapping: customerCreated:com.bazan.carlend.kafka.customer.CustomerCreated, vehicleCreated:com.bazan.carlend.kafka.vehicle.VehicleCreated
 
 server:
   port: 8070

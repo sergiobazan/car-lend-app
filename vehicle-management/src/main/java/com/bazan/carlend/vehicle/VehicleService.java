@@ -2,6 +2,8 @@ package com.bazan.carlend.vehicle;
 
 import com.bazan.carlend.category.Category;
 import com.bazan.carlend.category.ICategoryRepository;
+import com.bazan.carlend.kafka.VehicleCreated;
+import com.bazan.carlend.kafka.VehicleProducer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +15,7 @@ public class VehicleService implements IVehicleService {
 
     private final IVehicleRepository vehicleRepository;
     private final ICategoryRepository categoryRepository;
+    private final VehicleProducer vehicleProducer;
 
     @Override
     public VehicleResponse create(VehicleRequest vehicleRequest) throws Exception {
@@ -30,6 +33,16 @@ public class VehicleService implements IVehicleService {
 
         var vehicleSaved = vehicleRepository.save(vehicle);
 
+        vehicleProducer.send(
+                new VehicleCreated(
+                        vehicleSaved.getId(),
+                        vehicleSaved.getModel(),
+                        vehicleSaved.getPricePerDay(),
+                        vehicleSaved.getStatus(),
+                        category.getName()
+                )
+        );
+        
         return VehicleMapper.fromVehicle(vehicleSaved);
     }
 
