@@ -27,6 +27,14 @@ public class BookingService implements IBookingService {
         Vehicle vehicle = vehicleRepository.findById(bookingRequest.vehicleId())
                 .orElseThrow(() -> new RuntimeException("Vehicle not found"));
 
+        if (bookingRepository.isOverlapping(
+                bookingRequest.vehicleId(),
+                bookingRequest.startDate().toLocalDate(),
+                bookingRequest.endDate().toLocalDate()))
+        {
+            throw new RuntimeException("Overlapping vehicle");
+        }
+
         var totalDays = bookingRequest.endDate().getDayOfYear() - bookingRequest.startDate().getDayOfYear();
         var totalPrice = priceCalculator.calculatePrice(vehicle.getPricePerDay(), totalDays);
 
@@ -52,5 +60,13 @@ public class BookingService implements IBookingService {
                 .stream()
                 .map(BookingMapper::fromBooking)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<BookingResponse> findByClientId(int id) {
+        return bookingRepository.findByClientId(id)
+                .stream()
+                .map(BookingMapper::fromBooking)
+                .toList();
     }
 }
