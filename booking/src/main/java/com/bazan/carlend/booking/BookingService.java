@@ -2,22 +2,28 @@ package com.bazan.carlend.booking;
 
 import com.bazan.carlend.client.Client;
 import com.bazan.carlend.client.IClientRepository;
+import com.bazan.carlend.kafka.BookingConfirmation;
+import com.bazan.carlend.kafka.BookingProducer;
 import com.bazan.carlend.vehicle.IVehicleRepository;
 import com.bazan.carlend.vehicle.Vehicle;
+import com.bazan.carlend.vehicle.VehicleStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
+@Transactional
 public class BookingService implements IBookingService {
 
     private final IBookingRepository bookingRepository;
     private final IClientRepository clientRepository;
     private final IVehicleRepository vehicleRepository;
     private final IPriceCalculator priceCalculator;
+    private final BookingProducer bookingProducer;
 
     @Override
     public BookingResponse book(BookingRequest bookingRequest) {
@@ -35,7 +41,7 @@ public class BookingService implements IBookingService {
             throw new RuntimeException("Overlapping vehicle");
         }
 
-        var totalDays = bookingRequest.endDate().getDayOfYear() - bookingRequest.startDate().getDayOfYear();
+        var totalDays = getTotalDays(bookingRequest);
         var totalPrice = priceCalculator.calculatePrice(vehicle.getPricePerDay(), totalDays);
 
         var booking = Booking.builder()
@@ -48,7 +54,15 @@ public class BookingService implements IBookingService {
                 .vehicle(vehicle)
                 .build();
 
+        vehicle.setStatus(VehicleStatus.BUSY);
+
         var bookingSaved = bookingRepository.save(booking);
+
+        bookingProducer.sendBooking(new BookingConfirmation(
+                bookingSaved.getId(),
+                vehicle.getId(),
+                vehicle.getStatus()
+        ));
 
         return BookingMapper.fromBooking(bookingSaved);
     }
@@ -68,5 +82,9 @@ public class BookingService implements IBookingService {
                 .stream()
                 .map(BookingMapper::fromBooking)
                 .toList();
+    }
+
+    private static int getTotalDays(BookingRequest bookingRequest) {
+        return bookingRequest.endDate().getDayOfYear() - bookingRequest.startDate().getDayOfYear();
     }
 }

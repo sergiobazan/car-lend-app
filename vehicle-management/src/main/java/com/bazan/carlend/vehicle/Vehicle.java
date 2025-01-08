@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @Builder
 @Getter
+@Setter
 @Entity
 @Table(name = "vehicles")
 public class Vehicle {

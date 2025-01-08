@@ -1,4 +1,4 @@
-package com.bazan.carlend.kafka;
+package com.bazan.carlend.kafka.booking;
 
 import com.bazan.carlend.vehicle.VehicleStatus;
 
